@@ -92,11 +92,13 @@ def initializeWithOne(size):
 		temp.append(1)
 	return temp
 
-def learn(train_data,des_output,learn_rate,weights,b):
+def learn(train_data,des_output,learn_rate,weights,b,fd):
 	stop_error = 0.05
 	size = 16
 	error = initializeWithOne(size)
 	epochs = 0
+	print(error)
+	print("Learning Rate : " + str(learn_rate))
 	while(not(isDesiredError(error,stop_error))):
 		#print(weights)
 		for p in range(0,len(train_data)):
@@ -135,13 +137,17 @@ def learn(train_data,des_output,learn_rate,weights,b):
 			# print(b)
 			#print("---------------------------------------------------")
 		epochs = epochs + 1
-		if(epochs % 1000 == 0):
+		if(epochs % 3000 == 0):
 			print(epochs)
 			print("Error : " + str(error))
-	print("Number of epochs : " + str(epochs))
-	print("Error : " + str(error))
-	print(weights)
-	print(b)
+	
+	fd.write("Learning Rate : " + str(learn_rate) + "\n")
+	fd.write("Number of epochs : " + str(epochs) + "\n")
+	fd.write("Error : " + str(error) + "\n")
+	
+	# print(weights)
+	# print(b)
+
 if __name__ == '__main__':
 	global num_hidden_units
 	num_hidden_units = 4
@@ -152,17 +158,26 @@ if __name__ == '__main__':
 	n = 4
 	lst = list(itertools.product([0, 1], repeat=n))
 	des_output = desiredOutputs(lst)
-	print(lst)
+	#print(lst)
 	#print(des_output)
 	v_n = get_v_of_n(lst[2],lst[3],1)
 	#print("v_n :" + str(v_n))
 	learn_rate = 0.5
 	alpha = 0.9
 	#learn_rate = learn_rate/(1-alpha)
-	init_weights = initialize_weights()
-	#init_weights = np.random.rand(5,4)
-	print(init_weights)
-	init_b = initialize_bias()
-	#init_b = np.random.rand(5)
-	print(init_b)
-	learn(lst,des_output,learn_rate,init_weights,init_b)
+	#init_weights = initialize_weights()
+	init_weights = np.random.rand(5,4)
+	#print(init_weights)
+	#init_b = initialize_bias()
+	init_b = np.random.rand(5)
+	#print(init_b)
+	fd = open("Results.txt",'w')
+	learn_rate = np.arange(0.05,0.51,0.05)
+	# for i in range(0,len(learn_rate)):
+	# 	learn_rate[i] = learn_rate[i] / (1 - alpha)
+	print(learn_rate)
+	for i in learn_rate:
+		print(i)
+		learn(lst,des_output,i,init_weights,init_b,fd)
+	#learn(lst,des_output,learn_rate,init_weights,init_b,fd)
+	fd.close()
