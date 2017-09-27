@@ -62,23 +62,39 @@ def get_error(d_n,y_n):
 def get_delta_k(error_out,v_n_out):
 	return (error_out * get_sigmoid_prime(v_n_out,1))
 
-def out_weight_update(w_n,b_n,learn_rate,error_out,v_n_out,y_n):
+def out_weight_update(w_n,b_n,delta_w_n,delta_b_n,learn_rate,error_out,v_n_out,y_n,alpha):
 	w_n_plus_one = []
 	b_n_plus_one = 0
+	delta_w_n_new = []
+	delta_b_n_new = 0
 	for i in range(0,len(w_n)):
-		w_n_plus_one.append(w_n[i] + learn_rate * get_delta_k(error_out,v_n_out) * y_n[i])
-	b_n_plus_one = b_n + learn_rate * get_delta_k(error_out,v_n_out) * 1
-	return (w_n_plus_one,b_n_plus_one)
+		w_n_plus_one.append(w_n[i] + learn_rate * get_delta_k(error_out,v_n_out) * y_n[i] + delta_w_n[i])
+		delta_w_n_new.append(alpha * (w_n_plus_one[i] - w_n[i]))
+	b_n_plus_one = b_n + learn_rate * get_delta_k(error_out,v_n_out) * 1 + delta_b_n
+	delta_b_n_new = alpha * (b_n_plus_one - b_n)
+	return (w_n_plus_one,b_n_plus_one,delta_w_n_new,delta_b_n_new)
 
-def hidden_weight_update(w_n,b_n,learn_rate,v_n,x,delta_k):
+def initializeWithZero(m,n):
+	temp = []
+	for i in range(0,m):
+		temp.append([])
+		for j in range(0,n):
+			temp[i].append(0)
+	return temp
+
+def hidden_weight_update(w_n,b_n,delta_w_n,delta_b_n,learn_rate,v_n,x,delta_k,alpha):
 	w_n_plus_one = []
 	b_n_plus_one = []
+	delta_w_n_new = initializeWithZero(num_hidden_units,len(w_n[0]))
+	delta_b_n_new = []
 	for i in range(0,num_hidden_units):
 		w_n_plus_one.append([])
 		for j in range(0,len(w_n[i])):
-			w_n_plus_one[i].append(w_n[i][j] + learn_rate * get_sigmoid_prime(v_n[i],1) * delta_k * w_n[4][i] * x[j])
-		b_n_plus_one.append(b_n[i] + learn_rate * get_sigmoid_prime(v_n[i],1) * delta_k * w_n[4][i] * 1)
-	return(w_n_plus_one,b_n_plus_one)
+			w_n_plus_one[i].append(w_n[i][j] + learn_rate * get_sigmoid_prime(v_n[i],1) * delta_k * w_n[4][i] * x[j] + delta_w_n[i][j])
+			delta_w_n_new[i][j] = alpha * (w_n_plus_one[i][j] - w_n[i][j])
+		b_n_plus_one.append(b_n[i] + learn_rate * get_sigmoid_prime(v_n[i],1) * delta_k * w_n[4][i] * 1 + delta_b_n[i])
+		delta_b_n_new.append(alpha * (b_n_plus_one[i] - b_n[i]))
+	return(w_n_plus_one,b_n_plus_one,delta_w_n_new,delta_b_n_new)
 
 def isDesiredError(error,stop_error):
 	for i in error:
@@ -92,15 +108,36 @@ def initializeWithOne(size):
 		temp.append(1)
 	return temp
 
-def learn(train_data,des_output,learn_rate,weights,b,fd):
+def update_weights(weights,b,w_n_plus_one,b_n_plus_one,w,b1):
+	for i in range(0,len(w_n_plus_one)):
+		weights[4][i] = w_n_plus_one[i]
+	b[4] = b_n_plus_one
+		
+	for i in range(0,num_hidden_units):
+		for j in range(0,4):
+			weights[i][j] = w[i][j]
+		b[i] = b1[i]
+	return (weights,b)
+
+def write_to_file(fd,learn_rate,epochs,error):
+	fd.write("Learning Rate : " + str(learn_rate) + "\n")
+	fd.write("Number of epochs : " + str(epochs) + "\n")
+	fd.write("Error : " + str(error) + "\n")
+
+def learn(train_data,des_output,learn_rate,weights,b,fd,alpha):
 	stop_error = 0.05
 	size = 16
 	error = initializeWithOne(size)
 	epochs = 0
 	print(error)
 	print("Learning Rate : " + str(learn_rate))
+	print("alpha : " + str(alpha))
+	print(weights)
 	while(not(isDesiredError(error,stop_error))):
-		#print(weights)
+		delta_b_n_out = 0
+		delta_w_n_out = [0,0,0,0]
+		delta_w_n = initializeWithZero(num_hidden_units,4)
+		delta_b_n = [0,0,0,0]
 		for p in range(0,len(train_data)):
 			#print("---------------------------Training data : " + str(p))
 			v_n = []
@@ -115,36 +152,19 @@ def learn(train_data,des_output,learn_rate,weights,b,fd):
 			#print(y_n_out)
 			error_out = get_error(des_output[p],y_n_out[0])
 			error[p] = abs(error_out)
-			w_n_plus_one,b_n_plus_one = out_weight_update(weights[4],b[4],learn_rate,error_out,v_n_out[0],y_n)
+			w_n_plus_one,b_n_plus_one,delta_w_n_out,delta_b_n_out = out_weight_update(weights[4],b[4],delta_w_n_out,delta_b_n_out,learn_rate,error_out,v_n_out[0],y_n,alpha)
 			
 			delta_k = get_delta_k(error_out,v_n_out[0])
-			w,b1 = hidden_weight_update(weights,b,learn_rate,v_n,train_data[p],delta_k)
-			# print("w n plus one : ")
-			# print(w_n_plus_one)
-			# print("b_n_plus_one : ")
-			# print(b_n_plus_one)
-			# print(w)
-			# print(b1)
-			for i in range(0,len(w_n_plus_one)):
-				weights[4][i] = w_n_plus_one[i]
-			b[4] = b_n_plus_one
+			w,b1,delta_w_n,delta_b_n = hidden_weight_update(weights,b,delta_w_n,delta_b_n,learn_rate,v_n,train_data[p],delta_k,alpha)
+
+			weights,b = update_weights(weights,b,w_n_plus_one,b_n_plus_one,w,b1)
 			
-			for i in range(0,num_hidden_units):
-				for j in range(0,4):
-					weights[i][j] = w[i][j]
-				b[i] = b1[i]
-			# print(weights)
-			# print(b)
-			#print("---------------------------------------------------")
 		epochs = epochs + 1
 		if(epochs % 3000 == 0):
 			print(epochs)
 			print("Error : " + str(error))
 	
-	fd.write("Learning Rate : " + str(learn_rate) + "\n")
-	fd.write("Number of epochs : " + str(epochs) + "\n")
-	fd.write("Error : " + str(error) + "\n")
-	
+	write_to_file(fd,learn_rate,epochs,error)	
 	# print(weights)
 	# print(b)
 
@@ -165,19 +185,29 @@ if __name__ == '__main__':
 	learn_rate = 0.5
 	alpha = 0.9
 	#learn_rate = learn_rate/(1-alpha)
-	#init_weights = initialize_weights()
-	init_weights = np.random.rand(5,4)
+	global initial_weights
+	initial_weights = initialize_weights()
+	#initial_weights = np.random.rand(5,4)
 	#print(init_weights)
-	#init_b = initialize_bias()
-	init_b = np.random.rand(5)
+	global initial_b
+	initial_b = initialize_bias()
+	#initial_b = np.random.rand(5)
 	#print(init_b)
 	fd = open("Results.txt",'w')
 	learn_rate = np.arange(0.05,0.51,0.05)
-	# for i in range(0,len(learn_rate)):
-	# 	learn_rate[i] = learn_rate[i] / (1 - alpha)
+	for i in range(0,len(learn_rate)):
+		learn_rate[i] = learn_rate[i] / (1 - alpha)
+	alpha = 0
 	print(learn_rate)
 	for i in learn_rate:
 		print(i)
-		learn(lst,des_output,i,init_weights,init_b,fd)
+		print("Initial Weights : ")
+		print(initial_weights)
+		print("Initial bias : ")
+		print(initial_b)
+		#init_weights = initial_weights
+		#nit_b = initial_b
+		#learn(lst,des_output,i,init_weights,init_b,fd)
+		learn(lst,des_output,i,initial_weights,initial_b,fd,alpha)
 	#learn(lst,des_output,learn_rate,init_weights,init_b,fd)
 	fd.close()
