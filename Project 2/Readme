@@ -1,0 +1,10 @@
+To run this code on linux system, use command
+
+python3 rbf.py
+
+
+Required packages : pandas, matplotlib, numpy.
+
+The program will save graphs for different values of K and learn rate as .png files in the current folder. The names of the file are indicative of the parameters K and learn rate.
+
+By default the program uses different variance for the clusters. To use the fixed guassian width, change variable fixedGuassianWidth in main function to True from False. 

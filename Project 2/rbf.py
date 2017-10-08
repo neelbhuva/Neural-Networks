@@ -144,9 +144,21 @@ def plotData(input_patterns,d,weights,k_clusters,k_centers,k_variance,k,learn_ra
 	plt.savefig("K_" + str(k) + "_learn_rate_" + str(learn_rate) + ".png")
 	plt.clf()
 
-def RBF(input_patterns,d,bases,learn_rate,max_epochs):
+def computeFixedGuassianWidth(k_centers):
+	temp_centers = []
+	for key,value in k_centers.items():
+		temp_centers.append(value)
+	temp = sorted(temp_centers)
+	return math.pow((temp[len(temp)-1]-temp[0]),2)
+
+def RBF(input_patterns,d,bases,learn_rate,max_epochs,fixedGuassianWidth):
 	(k_clusters,k_centers,k_variance) = kMeans(input_patterns,d,bases)
 	weights = initialize_weights(bases)
+	fixed_var = 0
+	if(fixedGuassianWidth == True):
+		fixed_var = computeFixedGuassianWidth(k_centers) / math.sqrt(2 * bases)
+		fixed_var = math.pow(fixed_var,2)
+		print("Fixed width : " + str(fixed_var))
 	# print("\n\n\nInitial Weights : ")
 	# print(weights)
 	epochs = 0
@@ -154,7 +166,10 @@ def RBF(input_patterns,d,bases,learn_rate,max_epochs):
 		for i in range(0,len(input_patterns)):
 			guassian = {}
 			for key,value in k_clusters.items():
-				guassian[key] = computeGuassian(input_patterns[i],k_variance[key],k_centers[key])
+				if(fixedGuassianWidth == True):
+					guassian[key] = computeGuassian(input_patterns[i],fixed_var,k_centers[key])
+				else:
+					guassian[key] = computeGuassian(input_patterns[i],k_variance[key],k_centers[key])
 			# print("\nGuassian : ")
 			# print(guassian)
 			Fx = getFx(weights,guassian)
@@ -171,6 +186,7 @@ def RBF(input_patterns,d,bases,learn_rate,max_epochs):
 
 if __name__ == '__main__':
 	numDataPoints = 75
+	fixedGuassianWidth = True
 	#input vector x, output scalar d
 	(x,d) = sampleDataPoints(numDataPoints)
 	# #plot the data points to verify visually
@@ -184,5 +200,5 @@ if __name__ == '__main__':
 		for bases in bases_series:
 			print("---------------------------------------------------------------")
 			print("Learn rate : " + str(learn_rate) + " # of bases : " + str(bases))
-			RBF(x,d,bases,learn_rate,max_epochs)
+			RBF(x,d,bases,learn_rate,max_epochs,fixedGuassianWidth)
 			print("---------------------------------------------------------------\n\n\n")
