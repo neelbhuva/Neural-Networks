@@ -113,35 +113,42 @@ def computeGuassian(input_vec,var,center):
 	a = (-1)/(2 * var)
 	return np.exp(a * eucledian)
 
-def getFx(weights,guassian):
+def getFx(weights,b,guassian):
 	total = 0
 	#print(weights,guassian)
 	for key,value in guassian.items():
 		#print("\nWeights[key] : " + str(weights[key]))
 		total = total + (weights[key] * value)
+	total = total + b * 1
 	return total 
 
-def weightUpdate(weights,d,y,input_signal,learn_rate):
+def weightUpdate(weights,b,d,y,input_signal,learn_rate):
 	w_n_plus_one = []
+	b_n_plus_one = 0
 	#print("\nWeight length : " + str(len(weights)))
-	for i in range(0,len(weights)):
+	for i in range(0,len(input_signal)):
 		#print(weights[i],learn_rate,(d-y),input_signal[i])
 		w_n_plus_one.append(weights[i] + (learn_rate * (d-y) * input_signal[i]))
-	return w_n_plus_one
+		b_n_plus_one = weights[i] + (learn_rate * (d-y) * 1)
+	return w_n_plus_one,b_n_plus_one
 
-def plotData(input_patterns,d,weights,k_clusters,k_centers,k_variance,k,learn_rate):
-	y = []
-	for i in range(0,len(input_patterns)):
-		guassian = {}
-		for key,value in k_clusters.items():
-			guassian[key] = computeGuassian(input_patterns[i],k_variance[key],k_centers[key])
-		y.append(getFx(weights,guassian))
+def plotData(input_patterns,d,weights,b,k_clusters,k_centers,k_variance,k,learn_rate,fixedGuassianWidth,y):
+	#y = []
+	if(fixedGuassianWidth == True):
+		s = "Fixed_Guas_Width"
+	else:
+		s = "Varying_Guass_width"
+	# for i in range(0,len(input_patterns)):
+	# 	guassian = {}
+	# 	for key,value in k_clusters.items():
+	# 		guassian[key] = computeGuassian(input_patterns[i],k_variance[key],k_centers[key])
+	# 	y.append(getFx(weights,b,guassian))
 	plt.scatter(input_patterns, y, marker='.',label="actual output")
 	plt.scatter(input_patterns, d, marker='*',label="sampled output")
-	plt.title("K = " + str(k) + " and Learning Rate = " + str(learn_rate))
+	plt.title("K = " + str(k) + " and Learning Rate = " + str(learn_rate) + " " + s)
 	plt.legend()
 	#plt.show()
-	plt.savefig("K_" + str(k) + "_learn_rate_" + str(learn_rate) + ".png")
+	plt.savefig("K_" + str(k) + "_learn_rate_" + str(learn_rate) + " " + s + ".png")
 	plt.clf()
 
 def computeFixedGuassianWidth(k_centers):
@@ -151,18 +158,19 @@ def computeFixedGuassianWidth(k_centers):
 	temp = sorted(temp_centers)
 	return math.pow((temp[len(temp)-1]-temp[0]),2)
 
-def RBF(input_patterns,d,bases,learn_rate,max_epochs,fixedGuassianWidth):
+def RBF(input_patterns,d,bases,learn_rate,max_epochs,fixedGuassianWidth,weights,b):
 	(k_clusters,k_centers,k_variance) = kMeans(input_patterns,d,bases)
-	weights = initialize_weights(bases)
+	
 	fixed_var = 0
 	if(fixedGuassianWidth == True):
 		fixed_var = computeFixedGuassianWidth(k_centers) / math.sqrt(2 * bases)
 		fixed_var = math.pow(fixed_var,2)
-		print("Fixed width : " + str(fixed_var))
+		#print("Fixed width : " + str(fixed_var))
 	# print("\n\n\nInitial Weights : ")
 	# print(weights)
 	epochs = 0
 	while(epochs <= max_epochs):
+		y = []
 		for i in range(0,len(input_patterns)):
 			guassian = {}
 			for key,value in k_clusters.items():
@@ -172,17 +180,18 @@ def RBF(input_patterns,d,bases,learn_rate,max_epochs,fixedGuassianWidth):
 					guassian[key] = computeGuassian(input_patterns[i],k_variance[key],k_centers[key])
 			# print("\nGuassian : ")
 			# print(guassian)
-			Fx = getFx(weights,guassian)
+			Fx = getFx(weights,b,guassian)
+			y.append(Fx)
 			#print("\nFx : " + str(Fx) + "\n")
-			weights = copy.copy(weightUpdate(weights,d[i],Fx,guassian,learn_rate))
+			weights,b = copy.copy(weightUpdate(weights,b,d[i],Fx,guassian,learn_rate))
 			# print("\nIntermediate Weights : ")
 			# print(weights)
 		epochs = epochs + 1
-		if(epochs % 50 == 0):
-			print("\nEpochs : " + str(epochs) + "\n")
+		# if(epochs % 50 == 0):
+		# 	print("\nEpochs : " + str(epochs) + "\n")
 	# print("\nFinal Weights : ")
 	# print(weights)
-	plotData(input_patterns,d,weights,k_clusters,k_centers,k_variance,bases,learn_rate)
+	plotData(input_patterns,d,weights,b,k_clusters,k_centers,k_variance,bases,learn_rate,fixedGuassianWidth,y)
 
 if __name__ == '__main__':
 	numDataPoints = 75
@@ -196,9 +205,25 @@ if __name__ == '__main__':
 	bases_series = [2,4,7,11,16]
 	learn_rate_series = [0.01,0.02]
 	max_epochs = 100
+	init_weights = initialize_weights(16)
+	init_b = rd.random()
+	print("Initial Weights : " + str(init_weights))
 	for learn_rate in learn_rate_series:
-		for bases in bases_series:
+		for bases in bases_series:	
+			fixedGuassianWidth = True
+			weights = copy.deepcopy(init_weights)
+			b = init_b
 			print("---------------------------------------------------------------")
-			print("Learn rate : " + str(learn_rate) + " # of bases : " + str(bases))
-			RBF(x,d,bases,learn_rate,max_epochs,fixedGuassianWidth)
-			print("---------------------------------------------------------------\n\n\n")
+			print("Fixed Guass Width : Learn rate : " + str(learn_rate) + " # of bases : " + str(bases))
+			RBF(x,d,bases,learn_rate,max_epochs,fixedGuassianWidth,weights,b)
+			print("---------------------------------------------------------------\n")
+			weights = copy.deepcopy(init_weights)
+			b = init_b
+			#print(weights)
+			#print(b)
+			fixedGuassianWidth = False			
+			print("---------------------------------------------------------------")
+			print("Varying Guass Width : Learn rate : " + str(learn_rate) + " # of bases : " + str(bases))
+			RBF(x,d,bases,learn_rate,max_epochs,fixedGuassianWidth,weights,b)
+			print("---------------------------------------------------------------\n")
+			

@@ -161,7 +161,7 @@ def learn(train_data,des_output,learn_rate,weights,b,fd,alpha):
 			weights,b = update_weights(weights,b,w_n_plus_one,b_n_plus_one,w,b1)
 			
 		epochs = epochs + 1
-		if(epochs % 3000 == 0):
+		if(epochs % 10000 == 0):
 			print(epochs)
 		if(epochs % 15000 == 0):
 			print("Error : " + str(error))
@@ -195,14 +195,14 @@ if __name__ == '__main__':
 	#print(lst)
 	#print(des_output)
 	global initial_weights
-	initial_weights = initialize_weights()
+	#initial_weights = initialize_weights()
 	#initial_weights = [[-0.6360791436676354,0.6004796194650841,-0.956914874387614,0.12116993046736135][0.5022367278828641,0.5646154529044839,0.5051043640099573,-0.5965247238641179],[0.25779655410004676,0.8457361770967498,0.5231879825256082, -0.8408321706937136],[-0.28164521687268285, -0.24731780476998655, 0.24581986297639502, -0.9253982569254791],[0.45015554119658063,-0.2811335040976013,-0.1821990011957696,0.8583247394747876]]
-	#initial_weights = np.random.rand(5,4)
+	initial_weights = np.random.rand(5,4)
 	#print(init_weights)
 	global initial_b
-	initial_b = initialize_bias()
+	#initial_b = initialize_bias()
 	#initial_b = [-0.16357184125119684,0.36218742680041827,0.9068696623198483,0.983684804487359,-0.888105722149733]
-	#initial_b = np.random.rand(5)
+	initial_b = np.random.rand(5)
 	#print(init_b)
 	fd = open("Results.txt",'w')
 	learn_rate = np.arange(0.05,0.51,0.05)
@@ -221,7 +221,7 @@ if __name__ == '__main__':
 		learn(lst,des_output,i,init_weights,init_b,fd,alpha)
 	fd.close()
 
-	fd = open("Results_momentum_3.txt",'w')
+	fd = open("Results_momentum.txt",'w')
 	fd.write("Initial Weights : " + str(initial_weights))
 	fd.write("Initial bias : " + str(initial_b))
 	alpha = 0.9

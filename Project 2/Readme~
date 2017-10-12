@@ -7,4 +7,4 @@ Required packages : pandas, matplotlib, numpy.
 
 The program will save graphs for different values of K and learn rate as .png files in the current folder. The names of the file are indicative of the parameters K and learn rate.
 
-Program will also generate graphs for the case with fixed variance for each cluster and the name are indicative.
+By default the program uses different variance for the clusters. To use the fixed guassian width, change variable fixedGuassianWidth in main function to True from False. 

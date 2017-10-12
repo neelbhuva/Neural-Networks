@@ -1,0 +1,8 @@
+To run the code simply use command :
+
+python3 parity.py
+
+To only run the code for learning parameter (no momentum) comment the line 228 to 238
+
+Results will be stored in two different files (Results.txt and Results_momentum.txt)
+
